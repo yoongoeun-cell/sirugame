@@ -39,6 +39,8 @@ export default function SiruGame() {
     setCombo(0);
     setIsGameOver(false);
     setGameStarted(true);
+    isDraggingRef.current = false;
+    dragStartRef.current = null;
   };
 
   useEffect(() => {
@@ -54,6 +56,7 @@ export default function SiruGame() {
   }, [timeLeft, gameStarted]);
 
   const handleDragStart = (x, y) => {
+    if (isGameOver) return; // 게임 끝나면 무시
     isDraggingRef.current = true;
     dragStartRef.current = { x, y };
     setDragRect({ left: x, top: y, width: 0, height: 0 });
@@ -61,7 +64,7 @@ export default function SiruGame() {
   };
 
   const handleDragMove = (x, y) => {
-    if (!isDraggingRef.current) return;
+    if (!isDraggingRef.current || isGameOver) return; // 게임 끝나면 무시
     const left = Math.min(dragStartRef.current.x, x);
     const top = Math.min(dragStartRef.current.y, y);
     const width = Math.abs(dragStartRef.current.x - x);
@@ -70,7 +73,7 @@ export default function SiruGame() {
   };
 
   const handleDragEnd = (x, y) => {
-    if (!isDraggingRef.current) return;
+    if (!isDraggingRef.current || isGameOver) return; // 게임 끝나면 무시
     isDraggingRef.current = false;
     setDragRect(null);
     selectCellsInRect(dragStartRef.current, { x, y });
@@ -82,6 +85,7 @@ export default function SiruGame() {
   });
 
   const selectCellsInRect = (start, end) => {
+    if (isGameOver) return; // 게임 끝나면 무시
     if (!start || !end) return;
     const startIdx = coordToIndex(start);
     const endIdx = coordToIndex(end);
@@ -130,7 +134,6 @@ export default function SiruGame() {
     setSelectedCells([]);
   };
 
-  // ✅ 터치 및 마우스 이벤트 등록 최적화
   useEffect(() => {
     const gameArea = gameAreaRef.current;
     if (!gameArea) return;
@@ -151,16 +154,19 @@ export default function SiruGame() {
 
     const handleTouchStart = (e) => {
       e.preventDefault();
+      if (isGameOver) return; // 게임 끝나면 무시
       const { x, y } = getCoord(e);
       handleDragStart(x, y);
     };
     const handleTouchMove = (e) => {
       e.preventDefault();
+      if (isGameOver) return; // 게임 끝나면 무시
       const { x, y } = getCoord(e);
       handleDragMove(x, y);
     };
     const handleTouchEnd = (e) => {
       e.preventDefault();
+      if (isGameOver) return; // 게임 끝나면 무시
       const rect = gameArea.getBoundingClientRect();
       const touch = e.changedTouches ? e.changedTouches[0] : e;
       handleDragEnd(touch.clientX - rect.left, touch.clientY - rect.top);
@@ -177,7 +183,7 @@ export default function SiruGame() {
       gameArea.removeEventListener("touchmove", handleTouchMove);
       gameArea.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [gameStarted]);
+  }, [gameStarted, isGameOver]);
 
   if (!gameStarted) {
     return (
@@ -226,24 +232,27 @@ export default function SiruGame() {
       )}
       <div
         ref={gameAreaRef}
-        onMouseDown={(e) =>
+        onMouseDown={(e) => {
+          if (isGameOver) return;
           handleDragStart(
             e.clientX - e.currentTarget.getBoundingClientRect().left,
             e.clientY - e.currentTarget.getBoundingClientRect().top
-          )
-        }
-        onMouseMove={(e) =>
+          );
+        }}
+        onMouseMove={(e) => {
+          if (isGameOver) return;
           handleDragMove(
             e.clientX - e.currentTarget.getBoundingClientRect().left,
             e.clientY - e.currentTarget.getBoundingClientRect().top
-          )
-        }
-        onMouseUp={(e) =>
+          );
+        }}
+        onMouseUp={(e) => {
+          if (isGameOver) return;
           handleDragEnd(
             e.clientX - e.currentTarget.getBoundingClientRect().left,
             e.clientY - e.currentTarget.getBoundingClientRect().top
-          )
-        }
+          );
+        }}
         style={{
           touchAction: "none",
           width: GRID_SIZE * CELL_SIZE,
