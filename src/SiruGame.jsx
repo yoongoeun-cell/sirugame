@@ -12,14 +12,13 @@ export default function SiruGame() {
   const [grid, setGrid] = useState([]);
   const [selectedCells, setSelectedCells] = useState([]);
   const [dragRect, setDragRect] = useState(null);
-  const isDraggingRef = useRef(false);
-
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_TIME);
   const [combo, setCombo] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
 
+  const isDraggingRef = useRef(false);
   const dragStartRef = useRef(null);
   const gameAreaRef = useRef(null);
 
@@ -35,7 +34,6 @@ export default function SiruGame() {
     );
     setSelectedCells([]);
     setDragRect(null);
-    isDraggingRef.current = false;
     setScore(0);
     setTimeLeft(GAME_TIME);
     setCombo(0);
@@ -55,115 +53,28 @@ export default function SiruGame() {
     return () => clearInterval(timer);
   }, [timeLeft, gameStarted]);
 
-  const handleMouseDown = (e) => {
-    if (isGameOver) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    dragStartRef.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
+  const handleDragStart = (x, y) => {
     isDraggingRef.current = true;
-    setDragRect({
-      left: e.clientX - rect.left,
-      top: e.clientY - rect.top,
-      width: 0,
-      height: 0,
-    });
+    dragStartRef.current = { x, y };
+    setDragRect({ left: x, top: y, width: 0, height: 0 });
     setSelectedCells([]);
   };
 
-  const handleMouseMove = (e) => {
+  const handleDragMove = (x, y) => {
     if (!isDraggingRef.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const currentX = e.clientX - rect.left;
-    const currentY = e.clientY - rect.top;
-
-    const left = Math.min(dragStartRef.current.x, currentX);
-    const top = Math.min(dragStartRef.current.y, currentY);
-    const width = Math.abs(dragStartRef.current.x - currentX);
-    const height = Math.abs(dragStartRef.current.y - currentY);
-
+    const left = Math.min(dragStartRef.current.x, x);
+    const top = Math.min(dragStartRef.current.y, y);
+    const width = Math.abs(dragStartRef.current.x - x);
+    const height = Math.abs(dragStartRef.current.y - y);
     setDragRect({ left, top, width, height });
   };
 
-  const handleMouseUp = (e) => {
+  const handleDragEnd = (x, y) => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
     setDragRect(null);
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const endCoord = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-
-    selectCellsInRect(dragStartRef.current, endCoord);
+    selectCellsInRect(dragStartRef.current, { x, y });
   };
-
-  useEffect(() => {
-    const gameArea = gameAreaRef.current;
-    if (!gameArea) return;
-
-    const handleTouchStart = (e) => {
-      e.preventDefault();
-      if (isGameOver) return;
-      const rect = gameArea.getBoundingClientRect();
-      const touch = e.touches[0];
-      dragStartRef.current = {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top,
-      };
-      isDraggingRef.current = true;
-      setDragRect({
-        left: touch.clientX - rect.left,
-        top: touch.clientY - rect.top,
-        width: 0,
-        height: 0,
-      });
-      setSelectedCells([]);
-    };
-
-    const handleTouchMove = (e) => {
-      e.preventDefault();
-      if (!isDraggingRef.current) return;
-      const rect = gameArea.getBoundingClientRect();
-      const touch = e.touches[0];
-      const currentX = touch.clientX - rect.left;
-      const currentY = touch.clientY - rect.top;
-
-      const left = Math.min(dragStartRef.current.x, currentX);
-      const top = Math.min(dragStartRef.current.y, currentY);
-      const width = Math.abs(dragStartRef.current.x - currentX);
-      const height = Math.abs(dragStartRef.current.y - currentY);
-
-      setDragRect({ left, top, width, height });
-    };
-
-    const handleTouchEnd = (e) => {
-      e.preventDefault();
-      if (!isDraggingRef.current) return;
-      isDraggingRef.current = false;
-      setDragRect(null);
-
-      const rect = gameArea.getBoundingClientRect();
-      const touch = e.changedTouches[0];
-      const endCoord = {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top,
-      };
-
-      selectCellsInRect(dragStartRef.current, endCoord);
-    };
-
-    gameArea.addEventListener("touchstart", handleTouchStart, {
-      passive: false,
-    });
-    gameArea.addEventListener("touchmove", handleTouchMove, { passive: false });
-    gameArea.addEventListener("touchend", handleTouchEnd, { passive: false });
-
-    return () => {
-      gameArea.removeEventListener("touchstart", handleTouchStart);
-      gameArea.removeEventListener("touchmove", handleTouchMove);
-      gameArea.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [isGameOver]);
 
   const coordToIndex = (coord) => ({
     row: Math.min(GRID_SIZE - 1, Math.floor(coord.y / CELL_SIZE)),
@@ -203,7 +114,6 @@ export default function SiruGame() {
     cells.forEach(({ row, col }) => {
       newGrid[row][col] = 0;
     });
-
     for (let col = 0; col < GRID_SIZE; col++) {
       const colVals = [];
       for (let row = 0; row < GRID_SIZE; row++) {
@@ -220,6 +130,55 @@ export default function SiruGame() {
     setSelectedCells([]);
   };
 
+  // ✅ 터치 및 마우스 이벤트 등록 최적화
+  useEffect(() => {
+    const gameArea = gameAreaRef.current;
+    if (!gameArea) return;
+
+    const getCoord = (e) => {
+      const rect = gameArea.getBoundingClientRect();
+      return {
+        x:
+          e.touches && e.touches.length > 0
+            ? e.touches[0].clientX - rect.left
+            : e.clientX - rect.left,
+        y:
+          e.touches && e.touches.length > 0
+            ? e.touches[0].clientY - rect.top
+            : e.clientY - rect.top,
+      };
+    };
+
+    const handleTouchStart = (e) => {
+      e.preventDefault();
+      const { x, y } = getCoord(e);
+      handleDragStart(x, y);
+    };
+    const handleTouchMove = (e) => {
+      e.preventDefault();
+      const { x, y } = getCoord(e);
+      handleDragMove(x, y);
+    };
+    const handleTouchEnd = (e) => {
+      e.preventDefault();
+      const rect = gameArea.getBoundingClientRect();
+      const touch = e.changedTouches ? e.changedTouches[0] : e;
+      handleDragEnd(touch.clientX - rect.left, touch.clientY - rect.top);
+    };
+
+    gameArea.addEventListener("touchstart", handleTouchStart, {
+      passive: false,
+    });
+    gameArea.addEventListener("touchmove", handleTouchMove, { passive: false });
+    gameArea.addEventListener("touchend", handleTouchEnd, { passive: false });
+
+    return () => {
+      gameArea.removeEventListener("touchstart", handleTouchStart);
+      gameArea.removeEventListener("touchmove", handleTouchMove);
+      gameArea.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [gameStarted]);
+
   if (!gameStarted) {
     return (
       <div style={{ textAlign: "center" }}>
@@ -233,7 +192,7 @@ export default function SiruGame() {
             fontSize: "24px",
             padding: "12px 24px",
             cursor: "pointer",
-            backgroundColor: "#1976d2",
+            backgroundColor: "#F44336",
             color: "#fff",
             border: "none",
             borderRadius: "8px",
@@ -267,9 +226,24 @@ export default function SiruGame() {
       )}
       <div
         ref={gameAreaRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        onMouseDown={(e) =>
+          handleDragStart(
+            e.clientX - e.currentTarget.getBoundingClientRect().left,
+            e.clientY - e.currentTarget.getBoundingClientRect().top
+          )
+        }
+        onMouseMove={(e) =>
+          handleDragMove(
+            e.clientX - e.currentTarget.getBoundingClientRect().left,
+            e.clientY - e.currentTarget.getBoundingClientRect().top
+          )
+        }
+        onMouseUp={(e) =>
+          handleDragEnd(
+            e.clientX - e.currentTarget.getBoundingClientRect().left,
+            e.clientY - e.currentTarget.getBoundingClientRect().top
+          )
+        }
         style={{
           touchAction: "none",
           width: GRID_SIZE * CELL_SIZE,
@@ -332,7 +306,7 @@ export default function SiruGame() {
           padding: "10px 20px",
           cursor: "pointer",
           marginTop: "20px",
-          backgroundColor: "#1976d2",
+          backgroundColor: "#F44336",
           color: "#fff",
           border: "none",
           borderRadius: "8px",
