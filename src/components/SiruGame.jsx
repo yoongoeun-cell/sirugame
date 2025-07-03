@@ -76,12 +76,11 @@ export default function AppleGame() {
     const rect = e.currentTarget.getBoundingClientRect();
     const currentX = e.clientX - rect.left;
     const currentY = e.clientY - rect.top;
-    setDragRect({
-      left: Math.min(dragStartRef.current.x, currentX),
-      top: Math.min(dragStartRef.current.y, currentY),
-      width: Math.abs(dragStartRef.current.x - currentX),
-      height: Math.abs(dragStartRef.current.y - currentY),
-    });
+    const left = Math.min(dragStartRef.current.x, currentX);
+    const top = Math.min(dragStartRef.current.y, currentY);
+    const width = Math.abs(dragStartRef.current.x - currentX);
+    const height = Math.abs(dragStartRef.current.y - currentY);
+    setDragRect({ left, top, width, height });
   };
 
   const handleMouseUp = (e) => {
@@ -93,56 +92,48 @@ export default function AppleGame() {
     selectCellsInRect(dragStartRef.current, endCoord);
   };
 
+  // 📌 모바일 드래그 개선
   useEffect(() => {
     const gameArea = gameAreaRef.current;
     if (!gameArea) return;
 
     const handleTouchStart = (e) => {
-      e.preventDefault();
       if (isGameOver) return;
-      const rect = gameArea.getBoundingClientRect();
+      e.preventDefault();
       const touch = e.touches[0];
-      dragStartRef.current = {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top,
-      };
+      const rect = gameArea.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      dragStartRef.current = { x, y };
       setIsDragging(true);
-      setDragRect({
-        left: touch.clientX - rect.left,
-        top: touch.clientY - rect.top,
-        width: 0,
-        height: 0,
-      });
+      setDragRect({ left: x, top: y, width: 0, height: 0 });
       setSelectedCells([]);
     };
 
     const handleTouchMove = (e) => {
-      e.preventDefault();
       if (!isDragging) return;
-      const rect = gameArea.getBoundingClientRect();
+      e.preventDefault();
       const touch = e.touches[0];
-      const currentX = touch.clientX - rect.left;
-      const currentY = touch.clientY - rect.top;
-      setDragRect({
-        left: Math.min(dragStartRef.current.x, currentX),
-        top: Math.min(dragStartRef.current.y, currentY),
-        width: Math.abs(dragStartRef.current.x - currentX),
-        height: Math.abs(dragStartRef.current.y - currentY),
-      });
+      const rect = gameArea.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      const left = Math.min(dragStartRef.current.x, x);
+      const top = Math.min(dragStartRef.current.y, y);
+      const width = Math.abs(dragStartRef.current.x - x);
+      const height = Math.abs(dragStartRef.current.y - y);
+      setDragRect({ left, top, width, height });
     };
 
     const handleTouchEnd = (e) => {
-      e.preventDefault();
       if (!isDragging) return;
+      e.preventDefault();
       setIsDragging(false);
       setDragRect(null);
-      const rect = gameArea.getBoundingClientRect();
       const touch = e.changedTouches[0];
-      const endCoord = {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top,
-      };
-      selectCellsInRect(dragStartRef.current, endCoord);
+      const rect = gameArea.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      selectCellsInRect(dragStartRef.current, { x, y });
     };
 
     gameArea.addEventListener("touchstart", handleTouchStart, {
@@ -171,6 +162,7 @@ export default function AppleGame() {
     const rowMax = Math.max(startIdx.row, endIdx.row);
     const colMin = Math.min(startIdx.col, endIdx.col);
     const colMax = Math.max(startIdx.col, endIdx.col);
+
     const cells = [];
     for (let r = rowMin; r <= rowMax; r++) {
       for (let c = colMin; c <= colMax; c++) {
@@ -178,6 +170,7 @@ export default function AppleGame() {
       }
     }
     setSelectedCells(cells);
+
     const sum = cells.reduce((acc, { row, col }) => acc + grid[row][col], 0);
     if (sum === 10) {
       removeSelectedCells(cells);
@@ -194,6 +187,7 @@ export default function AppleGame() {
     cells.forEach(({ row, col }) => {
       newGrid[row][col] = 0;
     });
+
     for (let col = 0; col < GRID_SIZE; col++) {
       const colVals = [];
       for (let row = 0; row < GRID_SIZE; row++) {
@@ -214,14 +208,6 @@ export default function AppleGame() {
     return (
       <div style={{ textAlign: "center" }}>
         <h2>🍎 사과 합 10 게임 🍎</h2>
-        <h4
-          style={{
-            textAlign: "right",
-            marginTop: ".5px",
-          }}
-        >
-          만든이 : 고순이
-        </h4>
         <button
           onClick={startGame}
           style={{
@@ -241,7 +227,13 @@ export default function AppleGame() {
   }
 
   return (
-    <div style={{ textAlign: "center", userSelect: "none" }}>
+    <div
+      style={{
+        userSelect: "none",
+        fontFamily: "Arial, sans-serif",
+        textAlign: "center",
+      }}
+    >
       <h2>🍎 사과 합 10 게임 🍎</h2>
       <div style={{ fontSize: "18px", marginBottom: "10px" }}>
         <strong>점수:</strong> {score} &nbsp;|&nbsp; <strong>콤보:</strong>{" "}
@@ -267,9 +259,10 @@ export default function AppleGame() {
           display: "grid",
           gridTemplateColumns: `repeat(${GRID_SIZE}, ${CELL_SIZE}px)`,
           gridTemplateRows: `repeat(${GRID_SIZE}, ${CELL_SIZE}px)`,
-          backgroundColor: "#fff",
-          margin: "0 auto",
+          cursor: isGameOver ? "default" : "crosshair",
           position: "relative",
+          backgroundColor: "#f9f9f9",
+          margin: "0 auto",
         }}
       >
         {grid.flatMap((row, rIdx) =>
@@ -308,6 +301,7 @@ export default function AppleGame() {
               backgroundColor: "rgba(0, 128, 255, 0.2)",
               border: "2px dashed #0080ff",
               pointerEvents: "none",
+              zIndex: 10,
             }}
           />
         )}
