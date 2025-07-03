@@ -12,7 +12,9 @@ export default function AppleGame() {
   const [grid, setGrid] = useState([]);
   const [selectedCells, setSelectedCells] = useState([]);
   const [dragRect, setDragRect] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
+  // isDragging을 useRef로 관리
+  const isDraggingRef = useRef(false);
+
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_TIME);
   const [combo, setCombo] = useState(0);
@@ -34,7 +36,7 @@ export default function AppleGame() {
     );
     setSelectedCells([]);
     setDragRect(null);
-    setIsDragging(false);
+    isDraggingRef.current = false;
     setScore(0);
     setTimeLeft(GAME_TIME);
     setCombo(0);
@@ -62,7 +64,7 @@ export default function AppleGame() {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     };
-    setIsDragging(true);
+    isDraggingRef.current = true;
     setDragRect({
       left: e.clientX - rect.left,
       top: e.clientY - rect.top,
@@ -73,7 +75,7 @@ export default function AppleGame() {
   };
 
   const handleMouseMove = (e) => {
-    if (!isDragging) return;
+    if (!isDraggingRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const currentX = e.clientX - rect.left;
     const currentY = e.clientY - rect.top;
@@ -87,8 +89,8 @@ export default function AppleGame() {
   };
 
   const handleMouseUp = (e) => {
-    if (!isDragging) return;
-    setIsDragging(false);
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
     setDragRect(null);
 
     const rect = e.currentTarget.getBoundingClientRect();
@@ -97,7 +99,7 @@ export default function AppleGame() {
     selectCellsInRect(dragStartRef.current, endCoord);
   };
 
-  // 터치 이벤트를 gameAreaRef에 직접 바인딩 (첫 터치부터 드래그 가능)
+  // 터치 이벤트
   useEffect(() => {
     const gameArea = gameAreaRef.current;
     if (!gameArea) return;
@@ -111,7 +113,7 @@ export default function AppleGame() {
         x: touch.clientX - rect.left,
         y: touch.clientY - rect.top,
       };
-      setIsDragging(true);
+      isDraggingRef.current = true;
       setDragRect({
         left: touch.clientX - rect.left,
         top: touch.clientY - rect.top,
@@ -123,7 +125,7 @@ export default function AppleGame() {
 
     const handleTouchMove = (e) => {
       e.preventDefault();
-      if (!isDragging) return;
+      if (!isDraggingRef.current) return;
       const rect = gameArea.getBoundingClientRect();
       const touch = e.touches[0];
       const currentX = touch.clientX - rect.left;
@@ -139,8 +141,8 @@ export default function AppleGame() {
 
     const handleTouchEnd = (e) => {
       e.preventDefault();
-      if (!isDragging) return;
-      setIsDragging(false);
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
       setDragRect(null);
 
       const rect = gameArea.getBoundingClientRect();
@@ -164,7 +166,7 @@ export default function AppleGame() {
       gameArea.removeEventListener("touchmove", handleTouchMove);
       gameArea.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isDragging, isGameOver]);
+  }, [isGameOver]);
 
   const coordToIndex = (coord) => ({
     row: Math.min(GRID_SIZE - 1, Math.floor(coord.y / CELL_SIZE)),
@@ -226,7 +228,7 @@ export default function AppleGame() {
       <div style={{ textAlign: "center" }}>
         <h2>🍎 사과 합 10 게임 🍎</h2>
         <h4 style={{ textAlign: "right", marginTop: ".5px" }}>
-          만든이 : 고순이 확인 드래그
+          만든이 : 고순이 제발요
         </h4>
         <button
           onClick={startGame}
