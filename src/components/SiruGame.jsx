@@ -12,7 +12,8 @@ export default function AppleGame() {
   const [grid, setGrid] = useState([]);
   const [selectedCells, setSelectedCells] = useState([]);
   const [dragRect, setDragRect] = useState(null);
-  // isDragging을 useRef로 관리
+
+  // isDragging 상태 useRef로 관리
   const isDraggingRef = useRef(false);
 
   const [score, setScore] = useState(0);
@@ -99,7 +100,7 @@ export default function AppleGame() {
     selectCellsInRect(dragStartRef.current, endCoord);
   };
 
-  // 터치 이벤트
+  // 터치 이벤트 - addEventListener 직접 등록 (최신 isDraggingRef 사용)
   useEffect(() => {
     const gameArea = gameAreaRef.current;
     if (!gameArea) return;
@@ -228,7 +229,7 @@ export default function AppleGame() {
       <div style={{ textAlign: "center" }}>
         <h2>🍎 사과 합 10 게임 🍎</h2>
         <h4 style={{ textAlign: "right", marginTop: ".5px" }}>
-          만든이 : 고순이 제발요
+          만든이 : 고순이 제발요 22
         </h4>
         <button
           onClick={startGame}
