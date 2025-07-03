@@ -231,7 +231,7 @@ export default function AppleGame() {
       <div style={{ textAlign: "center" }}>
         <h2>🍎 사과 합 10 게임 🍎</h2>
         <h4 style={{ textAlign: "right", marginTop: ".5px" }}>
-          만든이 : 고순이당
+          만든이 : 고순아
         </h4>
         <button
           onClick={startGame}
