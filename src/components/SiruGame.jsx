@@ -54,6 +54,7 @@ export default function AppleGame() {
     return () => clearInterval(timer);
   }, [timeLeft, gameStarted]);
 
+  // 마우스 이벤트
   const handleMouseDown = (e) => {
     if (isGameOver) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -96,7 +97,7 @@ export default function AppleGame() {
     selectCellsInRect(dragStartRef.current, endCoord);
   };
 
-  // Touch 이벤트 addEventListener 등록 + 즉시 드래그 시작 상태 세팅
+  // 터치 이벤트를 gameAreaRef에 직접 바인딩 (첫 터치부터 드래그 가능)
   useEffect(() => {
     const gameArea = gameAreaRef.current;
     if (!gameArea) return;
@@ -112,12 +113,12 @@ export default function AppleGame() {
       };
       setIsDragging(true);
       setDragRect({
-        left: dragStartRef.current.x,
-        top: dragStartRef.current.y,
+        left: touch.clientX - rect.left,
+        top: touch.clientY - rect.top,
         width: 0,
         height: 0,
       });
-      setSelectedCells([]); // 터치 시작 시 바로 선택 초기화
+      setSelectedCells([]);
     };
 
     const handleTouchMove = (e) => {
@@ -225,7 +226,7 @@ export default function AppleGame() {
       <div style={{ textAlign: "center" }}>
         <h2>🍎 사과 합 10 게임 🍎</h2>
         <h4 style={{ textAlign: "right", marginTop: ".5px" }}>
-          만든이 : 고순이
+          만든이 : 고순이 확인 드래그
         </h4>
         <button
           onClick={startGame}
