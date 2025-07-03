@@ -1,5 +1,5 @@
 import React from "react";
-import SiruGame from "./components/SiruGame";
+import SiruGame from "./SiruGame";
 
 function App() {
   return (

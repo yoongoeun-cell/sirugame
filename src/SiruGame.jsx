@@ -64,8 +64,8 @@ export default function SiruGame() {
     };
     isDraggingRef.current = true;
     setDragRect({
-      left: dragStartRef.current.x,
-      top: dragStartRef.current.y,
+      left: e.clientX - rect.left,
+      top: e.clientY - rect.top,
       width: 0,
       height: 0,
     });
@@ -112,8 +112,8 @@ export default function SiruGame() {
       };
       isDraggingRef.current = true;
       setDragRect({
-        left: dragStartRef.current.x,
-        top: dragStartRef.current.y,
+        left: touch.clientX - rect.left,
+        top: touch.clientY - rect.top,
         width: 0,
         height: 0,
       });
@@ -158,13 +158,12 @@ export default function SiruGame() {
     gameArea.addEventListener("touchmove", handleTouchMove, { passive: false });
     gameArea.addEventListener("touchend", handleTouchEnd, { passive: false });
 
-    // **중요**: 의존성에서 isGameOver 제거 (이벤트가 여러번 붙었다 떨어지는 문제 방지)
     return () => {
       gameArea.removeEventListener("touchstart", handleTouchStart);
       gameArea.removeEventListener("touchmove", handleTouchMove);
       gameArea.removeEventListener("touchend", handleTouchEnd);
     };
-  }, []); // []로 변경
+  }, [isGameOver]);
 
   const coordToIndex = (coord) => ({
     row: Math.min(GRID_SIZE - 1, Math.floor(coord.y / CELL_SIZE)),
@@ -173,13 +172,6 @@ export default function SiruGame() {
 
   const selectCellsInRect = (start, end) => {
     if (!start || !end) return;
-
-    // 드래그 너무 작으면 무시 (선택 해제)
-    if (Math.abs(start.x - end.x) < 5 && Math.abs(start.y - end.y) < 5) {
-      setSelectedCells([]);
-      return;
-    }
-
     const startIdx = coordToIndex(start);
     const endIdx = coordToIndex(end);
     const rowMin = Math.min(startIdx.row, endIdx.row);
@@ -233,7 +225,7 @@ export default function SiruGame() {
       <div style={{ textAlign: "center" }}>
         <h2>🍎 사과 합 10 게임 🍎</h2>
         <h4 style={{ textAlign: "right", marginTop: ".5px" }}>
-          만든이 : 고순이 시무룩
+          만든이 : 고순이
         </h4>
         <button
           onClick={startGame}
@@ -241,7 +233,7 @@ export default function SiruGame() {
             fontSize: "24px",
             padding: "12px 24px",
             cursor: "pointer",
-            backgroundColor: "#F44336",
+            backgroundColor: "#1976d2",
             color: "#fff",
             border: "none",
             borderRadius: "8px",
@@ -340,7 +332,7 @@ export default function SiruGame() {
           padding: "10px 20px",
           cursor: "pointer",
           marginTop: "20px",
-          backgroundColor: "#F44336",
+          backgroundColor: "#1976d2",
           color: "#fff",
           border: "none",
           borderRadius: "8px",
