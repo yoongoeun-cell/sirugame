@@ -55,7 +55,6 @@ export default function SiruGame() {
     return () => clearInterval(timer);
   }, [timeLeft, gameStarted]);
 
-  // 마우스 이벤트
   const handleMouseDown = (e) => {
     if (isGameOver) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -98,7 +97,6 @@ export default function SiruGame() {
     selectCellsInRect(dragStartRef.current, endCoord);
   };
 
-  // 터치 이벤트
   useEffect(() => {
     const gameArea = gameAreaRef.current;
     if (!gameArea) return;
@@ -227,7 +225,7 @@ export default function SiruGame() {
       <div style={{ textAlign: "center" }}>
         <h2>🍎 사과 합 10 게임 🍎</h2>
         <h4 style={{ textAlign: "right", marginTop: ".5px" }}>
-          만든이 : 고순이^
+          만든이 : 고순이
         </h4>
         <button
           onClick={startGame}
