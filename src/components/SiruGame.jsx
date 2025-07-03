@@ -12,6 +12,8 @@ export default function AppleGame() {
   const [grid, setGrid] = useState([]);
   const [selectedCells, setSelectedCells] = useState([]);
   const [dragRect, setDragRect] = useState(null);
+
+  // 드래그 중인지 상태는 useRef로 관리
   const isDraggingRef = useRef(false);
 
   const [score, setScore] = useState(0);
@@ -23,16 +25,17 @@ export default function AppleGame() {
   const dragStartRef = useRef(null);
   const gameAreaRef = useRef(null);
 
-  // 게임 시작 및 초기화
   const startGame = () => {
-    const newGrid = Array(GRID_SIZE)
-      .fill(0)
-      .map(() =>
-        Array(GRID_SIZE)
-          .fill(0)
-          .map(() => getRandomNumber())
-      );
-    setGrid(newGrid);
+    // 4x4 랜덤 숫자 초기화
+    setGrid(
+      Array(GRID_SIZE)
+        .fill(0)
+        .map(() =>
+          Array(GRID_SIZE)
+            .fill(0)
+            .map(() => getRandomNumber())
+        )
+    );
     setSelectedCells([]);
     setDragRect(null);
     isDraggingRef.current = false;
@@ -56,70 +59,7 @@ export default function AppleGame() {
     return () => clearInterval(timer);
   }, [timeLeft, gameStarted]);
 
-  // 좌표를 행, 열 인덱스로 변환
-  const coordToIndex = (coord) => ({
-    row: Math.min(GRID_SIZE - 1, Math.floor(coord.y / CELL_SIZE)),
-    col: Math.min(GRID_SIZE - 1, Math.floor(coord.x / CELL_SIZE)),
-  });
-
-  // 드래그로 선택된 셀들 결정 및 점수 계산
-  const selectCellsInRect = (start, end) => {
-    if (!start || !end) return;
-    const startIdx = coordToIndex(start);
-    const endIdx = coordToIndex(end);
-
-    const rowMin = Math.min(startIdx.row, endIdx.row);
-    const rowMax = Math.max(startIdx.row, endIdx.row);
-    const colMin = Math.min(startIdx.col, endIdx.col);
-    const colMax = Math.max(startIdx.col, endIdx.col);
-
-    const cells = [];
-    for (let r = rowMin; r <= rowMax; r++) {
-      for (let c = colMin; c <= colMax; c++) {
-        cells.push({ row: r, col: c });
-      }
-    }
-    setSelectedCells(cells);
-
-    // 선택된 사과 값 합산
-    const sum = cells.reduce((acc, { row, col }) => acc + grid[row][col], 0);
-
-    if (sum === 10) {
-      removeSelectedCells(cells);
-      setCombo((prev) => prev + 1);
-      const comboBonus = combo >= 1 ? 5 : 0;
-      setScore((prev) => prev + 10 + comboBonus);
-    } else {
-      setCombo(0);
-    }
-  };
-
-  // 선택된 셀 사과 제거 및 빈 칸 채우기
-  const removeSelectedCells = (cells) => {
-    const newGrid = grid.map((row) => [...row]);
-    cells.forEach(({ row, col }) => {
-      newGrid[row][col] = 0;
-    });
-
-    // 빈 칸 위로 당기기 & 새 사과 추가
-    for (let col = 0; col < GRID_SIZE; col++) {
-      const colVals = [];
-      for (let row = 0; row < GRID_SIZE; row++) {
-        if (newGrid[row][col] !== 0) colVals.push(newGrid[row][col]);
-      }
-      while (colVals.length < GRID_SIZE) {
-        colVals.unshift(getRandomNumber());
-      }
-      for (let row = 0; row < GRID_SIZE; row++) {
-        newGrid[row][col] = colVals[row];
-      }
-    }
-
-    setGrid(newGrid);
-    setSelectedCells([]);
-  };
-
-  // 마우스 이벤트 핸들러
+  // 마우스 드래그 이벤트
   const handleMouseDown = (e) => {
     if (isGameOver) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -129,13 +69,14 @@ export default function AppleGame() {
     };
     isDraggingRef.current = true;
     setDragRect({
-      left: dragStartRef.current.x,
-      top: dragStartRef.current.y,
+      left: e.clientX - rect.left,
+      top: e.clientY - rect.top,
       width: 0,
       height: 0,
     });
     setSelectedCells([]);
   };
+
   const handleMouseMove = (e) => {
     if (!isDraggingRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -149,6 +90,7 @@ export default function AppleGame() {
 
     setDragRect({ left, top, width, height });
   };
+
   const handleMouseUp = (e) => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
@@ -163,7 +105,7 @@ export default function AppleGame() {
     selectCellsInRect(dragStartRef.current, endCoord);
   };
 
-  // 터치 이벤트 직접 addEventListener 방식으로 등록해서 모바일 드래그 지원
+  // 모바일 터치 이벤트 - 직접 이벤트 리스너 등록 (passive: false 중요)
   useEffect(() => {
     const gameArea = gameAreaRef.current;
     if (!gameArea) return;
@@ -179,13 +121,14 @@ export default function AppleGame() {
       };
       isDraggingRef.current = true;
       setDragRect({
-        left: dragStartRef.current.x,
-        top: dragStartRef.current.y,
+        left: touch.clientX - rect.left,
+        top: touch.clientY - rect.top,
         width: 0,
         height: 0,
       });
       setSelectedCells([]);
     };
+
     const handleTouchMove = (e) => {
       e.preventDefault();
       if (!isDraggingRef.current) return;
@@ -201,6 +144,7 @@ export default function AppleGame() {
 
       setDragRect({ left, top, width, height });
     };
+
     const handleTouchEnd = (e) => {
       e.preventDefault();
       if (!isDraggingRef.current) return;
@@ -229,6 +173,69 @@ export default function AppleGame() {
       gameArea.removeEventListener("touchend", handleTouchEnd);
     };
   }, [isGameOver]);
+
+  // 좌표 -> 그리드 인덱스 변환
+  const coordToIndex = (coord) => ({
+    row: Math.min(GRID_SIZE - 1, Math.floor(coord.y / CELL_SIZE)),
+    col: Math.min(GRID_SIZE - 1, Math.floor(coord.x / CELL_SIZE)),
+  });
+
+  // 드래그 박스 내 셀들 선택
+  const selectCellsInRect = (start, end) => {
+    if (!start || !end) return;
+
+    const startIdx = coordToIndex(start);
+    const endIdx = coordToIndex(end);
+
+    const rowMin = Math.min(startIdx.row, endIdx.row);
+    const rowMax = Math.max(startIdx.row, endIdx.row);
+    const colMin = Math.min(startIdx.col, endIdx.col);
+    const colMax = Math.max(startIdx.col, endIdx.col);
+
+    const cells = [];
+    for (let r = rowMin; r <= rowMax; r++) {
+      for (let c = colMin; c <= colMax; c++) {
+        cells.push({ row: r, col: c });
+      }
+    }
+    setSelectedCells(cells);
+
+    // 선택된 셀 합 계산
+    const sum = cells.reduce((acc, { row, col }) => acc + grid[row][col], 0);
+
+    // 합이 10이면 점수 증가 및 셀 제거
+    if (sum === 10) {
+      removeSelectedCells(cells);
+      setCombo((prev) => prev + 1);
+      const comboBonus = combo >= 1 ? 5 : 0;
+      setScore((prev) => prev + 10 + comboBonus);
+    } else {
+      setCombo(0);
+    }
+  };
+
+  // 선택 셀 제거 및 위에서부터 다시 채우기
+  const removeSelectedCells = (cells) => {
+    const newGrid = grid.map((row) => [...row]);
+    cells.forEach(({ row, col }) => {
+      newGrid[row][col] = 0;
+    });
+
+    for (let col = 0; col < GRID_SIZE; col++) {
+      const colVals = [];
+      for (let row = 0; row < GRID_SIZE; row++) {
+        if (newGrid[row][col] !== 0) colVals.push(newGrid[row][col]);
+      }
+      while (colVals.length < GRID_SIZE) {
+        colVals.unshift(getRandomNumber());
+      }
+      for (let row = 0; row < GRID_SIZE; row++) {
+        newGrid[row][col] = colVals[row];
+      }
+    }
+    setGrid(newGrid);
+    setSelectedCells([]);
+  };
 
   if (!gameStarted) {
     return (
@@ -281,7 +288,7 @@ export default function AppleGame() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         style={{
-          touchAction: "none", // 이거 안하면 모바일 드래그 안됨
+          touchAction: "none", // 모바일 터치 시 기본 스크롤 막기
           width: GRID_SIZE * CELL_SIZE,
           height: GRID_SIZE * CELL_SIZE,
           border: "3px solid #333",
@@ -293,9 +300,6 @@ export default function AppleGame() {
           backgroundColor: "#f9f9f9",
           margin: "0 auto",
           userSelect: "none",
-          WebkitUserSelect: "none",
-          MozUserSelect: "none",
-          msUserSelect: "none",
         }}
       >
         {grid.flatMap((row, rIdx) =>
