@@ -12,8 +12,6 @@ export default function AppleGame() {
   const [grid, setGrid] = useState([]);
   const [selectedCells, setSelectedCells] = useState([]);
   const [dragRect, setDragRect] = useState(null);
-
-  // isDragging 상태 useRef로 관리
   const isDraggingRef = useRef(false);
 
   const [score, setScore] = useState(0);
@@ -57,7 +55,7 @@ export default function AppleGame() {
     return () => clearInterval(timer);
   }, [timeLeft, gameStarted]);
 
-  // 마우스 이벤트
+  // 마우스 이벤트 (PC용)
   const handleMouseDown = (e) => {
     if (isGameOver) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -67,8 +65,8 @@ export default function AppleGame() {
     };
     isDraggingRef.current = true;
     setDragRect({
-      left: e.clientX - rect.left,
-      top: e.clientY - rect.top,
+      left: dragStartRef.current.x,
+      top: dragStartRef.current.y,
       width: 0,
       height: 0,
     });
@@ -100,13 +98,13 @@ export default function AppleGame() {
     selectCellsInRect(dragStartRef.current, endCoord);
   };
 
-  // 터치 이벤트 - addEventListener 직접 등록 (최신 isDraggingRef 사용)
+  // 터치 이벤트 (모바일용)
   useEffect(() => {
     const gameArea = gameAreaRef.current;
     if (!gameArea) return;
 
     const handleTouchStart = (e) => {
-      e.preventDefault();
+      e.preventDefault(); // 꼭 필요: 기본 스크롤 막기
       if (isGameOver) return;
       const rect = gameArea.getBoundingClientRect();
       const touch = e.touches[0];
@@ -116,8 +114,8 @@ export default function AppleGame() {
       };
       isDraggingRef.current = true;
       setDragRect({
-        left: touch.clientX - rect.left,
-        top: touch.clientY - rect.top,
+        left: dragStartRef.current.x,
+        top: dragStartRef.current.y,
         width: 0,
         height: 0,
       });
@@ -156,6 +154,7 @@ export default function AppleGame() {
       selectCellsInRect(dragStartRef.current, endCoord);
     };
 
+    // passive: false 중요!! 기본 터치 동작 막기 위해서
     gameArea.addEventListener("touchstart", handleTouchStart, {
       passive: false,
     });
@@ -169,11 +168,13 @@ export default function AppleGame() {
     };
   }, [isGameOver]);
 
+  // 좌표 → 그리드 인덱스 변환
   const coordToIndex = (coord) => ({
     row: Math.min(GRID_SIZE - 1, Math.floor(coord.y / CELL_SIZE)),
     col: Math.min(GRID_SIZE - 1, Math.floor(coord.x / CELL_SIZE)),
   });
 
+  // 드래그 박스 내 셀 선택 처리 및 점수 계산
   const selectCellsInRect = (start, end) => {
     if (!start || !end) return;
     const startIdx = coordToIndex(start);
@@ -202,6 +203,7 @@ export default function AppleGame() {
     }
   };
 
+  // 선택된 셀 제거 후 새로운 셀 추가
   const removeSelectedCells = (cells) => {
     const newGrid = grid.map((row) => [...row]);
     cells.forEach(({ row, col }) => {
@@ -229,7 +231,7 @@ export default function AppleGame() {
       <div style={{ textAlign: "center" }}>
         <h2>🍎 사과 합 10 게임 🍎</h2>
         <h4 style={{ textAlign: "right", marginTop: ".5px" }}>
-          만든이 : 고순이 제발요 22
+          만든이 : 고순이당
         </h4>
         <button
           onClick={startGame}
@@ -275,7 +277,7 @@ export default function AppleGame() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         style={{
-          touchAction: "none",
+          touchAction: "none", // 모바일 터치 드래그 활성화 필수
           width: GRID_SIZE * CELL_SIZE,
           height: GRID_SIZE * CELL_SIZE,
           border: "3px solid #333",
@@ -286,6 +288,9 @@ export default function AppleGame() {
           position: "relative",
           backgroundColor: "#f9f9f9",
           margin: "0 auto",
+          WebkitUserSelect: "none", // iOS 선택방지
+          MozUserSelect: "none",
+          msUserSelect: "none",
         }}
       >
         {grid.flatMap((row, rIdx) =>
@@ -306,6 +311,9 @@ export default function AppleGame() {
                   fontWeight: "bold",
                   fontSize: CELL_SIZE / 3,
                   userSelect: "none",
+                  WebkitUserSelect: "none",
+                  MozUserSelect: "none",
+                  msUserSelect: "none",
                 }}
               >
                 🍎{num}
