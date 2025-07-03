@@ -8,12 +8,10 @@ function getRandomNumber() {
   return Math.floor(Math.random() * 9) + 1;
 }
 
-export default function AppleGame() {
+export default function SiruGame() {
   const [grid, setGrid] = useState([]);
   const [selectedCells, setSelectedCells] = useState([]);
   const [dragRect, setDragRect] = useState(null);
-
-  // 드래그 중인지 상태는 useRef로 관리
   const isDraggingRef = useRef(false);
 
   const [score, setScore] = useState(0);
@@ -26,7 +24,6 @@ export default function AppleGame() {
   const gameAreaRef = useRef(null);
 
   const startGame = () => {
-    // 4x4 랜덤 숫자 초기화
     setGrid(
       Array(GRID_SIZE)
         .fill(0)
@@ -46,7 +43,6 @@ export default function AppleGame() {
     setGameStarted(true);
   };
 
-  // 타이머 관리
   useEffect(() => {
     if (!gameStarted) return;
     if (timeLeft <= 0) {
@@ -59,7 +55,7 @@ export default function AppleGame() {
     return () => clearInterval(timer);
   }, [timeLeft, gameStarted]);
 
-  // 마우스 드래그 이벤트
+  // 마우스 이벤트
   const handleMouseDown = (e) => {
     if (isGameOver) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -97,15 +93,12 @@ export default function AppleGame() {
     setDragRect(null);
 
     const rect = e.currentTarget.getBoundingClientRect();
-    const endCoord = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
+    const endCoord = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
     selectCellsInRect(dragStartRef.current, endCoord);
   };
 
-  // 모바일 터치 이벤트 - 직접 이벤트 리스너 등록 (passive: false 중요)
+  // 터치 이벤트
   useEffect(() => {
     const gameArea = gameAreaRef.current;
     if (!gameArea) return;
@@ -174,19 +167,15 @@ export default function AppleGame() {
     };
   }, [isGameOver]);
 
-  // 좌표 -> 그리드 인덱스 변환
   const coordToIndex = (coord) => ({
     row: Math.min(GRID_SIZE - 1, Math.floor(coord.y / CELL_SIZE)),
     col: Math.min(GRID_SIZE - 1, Math.floor(coord.x / CELL_SIZE)),
   });
 
-  // 드래그 박스 내 셀들 선택
   const selectCellsInRect = (start, end) => {
     if (!start || !end) return;
-
     const startIdx = coordToIndex(start);
     const endIdx = coordToIndex(end);
-
     const rowMin = Math.min(startIdx.row, endIdx.row);
     const rowMax = Math.max(startIdx.row, endIdx.row);
     const colMin = Math.min(startIdx.col, endIdx.col);
@@ -200,10 +189,7 @@ export default function AppleGame() {
     }
     setSelectedCells(cells);
 
-    // 선택된 셀 합 계산
     const sum = cells.reduce((acc, { row, col }) => acc + grid[row][col], 0);
-
-    // 합이 10이면 점수 증가 및 셀 제거
     if (sum === 10) {
       removeSelectedCells(cells);
       setCombo((prev) => prev + 1);
@@ -214,7 +200,6 @@ export default function AppleGame() {
     }
   };
 
-  // 선택 셀 제거 및 위에서부터 다시 채우기
   const removeSelectedCells = (cells) => {
     const newGrid = grid.map((row) => [...row]);
     cells.forEach(({ row, col }) => {
@@ -242,7 +227,7 @@ export default function AppleGame() {
       <div style={{ textAlign: "center" }}>
         <h2>🍎 사과 합 10 게임 🍎</h2>
         <h4 style={{ textAlign: "right", marginTop: ".5px" }}>
-          만든이 : 고순이
+          만든이 : 고순이^
         </h4>
         <button
           onClick={startGame}
@@ -288,7 +273,7 @@ export default function AppleGame() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         style={{
-          touchAction: "none", // 모바일 터치 시 기본 스크롤 막기
+          touchAction: "none",
           width: GRID_SIZE * CELL_SIZE,
           height: GRID_SIZE * CELL_SIZE,
           border: "3px solid #333",
@@ -299,7 +284,6 @@ export default function AppleGame() {
           position: "relative",
           backgroundColor: "#f9f9f9",
           margin: "0 auto",
-          userSelect: "none",
         }}
       >
         {grid.flatMap((row, rIdx) =>
