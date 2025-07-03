@@ -13,8 +13,6 @@ export default function AppleGame() {
   const [selectedCells, setSelectedCells] = useState([]);
   const [dragRect, setDragRect] = useState(null);
   const isDraggingRef = useRef(false);
-  const dragStartRef = useRef(null);
-  const gameAreaRef = useRef(null);
 
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_TIME);
@@ -22,7 +20,10 @@ export default function AppleGame() {
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
 
-  // 게임 시작 및 그리드 초기화
+  const dragStartRef = useRef(null);
+  const gameAreaRef = useRef(null);
+
+  // 게임 시작 및 초기화
   const startGame = () => {
     const newGrid = Array(GRID_SIZE)
       .fill(0)
@@ -44,7 +45,7 @@ export default function AppleGame() {
 
   // 타이머 관리
   useEffect(() => {
-    if (!gameStarted || isGameOver) return;
+    if (!gameStarted) return;
     if (timeLeft <= 0) {
       setIsGameOver(true);
       return;
@@ -53,15 +54,15 @@ export default function AppleGame() {
       setTimeLeft((t) => t - 1);
     }, 1000);
     return () => clearInterval(timer);
-  }, [timeLeft, gameStarted, isGameOver]);
+  }, [timeLeft, gameStarted]);
 
-  // 좌표를 셀 인덱스로 변환
+  // 좌표를 행, 열 인덱스로 변환
   const coordToIndex = (coord) => ({
     row: Math.min(GRID_SIZE - 1, Math.floor(coord.y / CELL_SIZE)),
     col: Math.min(GRID_SIZE - 1, Math.floor(coord.x / CELL_SIZE)),
   });
 
-  // 드래그 영역 안 셀 선택 처리
+  // 드래그로 선택된 셀들 결정 및 점수 계산
   const selectCellsInRect = (start, end) => {
     if (!start || !end) return;
     const startIdx = coordToIndex(start);
@@ -80,7 +81,9 @@ export default function AppleGame() {
     }
     setSelectedCells(cells);
 
+    // 선택된 사과 값 합산
     const sum = cells.reduce((acc, { row, col }) => acc + grid[row][col], 0);
+
     if (sum === 10) {
       removeSelectedCells(cells);
       setCombo((prev) => prev + 1);
@@ -91,14 +94,14 @@ export default function AppleGame() {
     }
   };
 
-  // 선택 셀 제거 및 새 값 채우기
+  // 선택된 셀 사과 제거 및 빈 칸 채우기
   const removeSelectedCells = (cells) => {
     const newGrid = grid.map((row) => [...row]);
     cells.forEach(({ row, col }) => {
       newGrid[row][col] = 0;
     });
 
-    // 빈 셀 위에 새로운 숫자 채우기
+    // 빈 칸 위로 당기기 & 새 사과 추가
     for (let col = 0; col < GRID_SIZE; col++) {
       const colVals = [];
       for (let row = 0; row < GRID_SIZE; row++) {
@@ -111,11 +114,12 @@ export default function AppleGame() {
         newGrid[row][col] = colVals[row];
       }
     }
+
     setGrid(newGrid);
     setSelectedCells([]);
   };
 
-  // --- 마우스 이벤트 핸들러 ---
+  // 마우스 이벤트 핸들러
   const handleMouseDown = (e) => {
     if (isGameOver) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -132,7 +136,6 @@ export default function AppleGame() {
     });
     setSelectedCells([]);
   };
-
   const handleMouseMove = (e) => {
     if (!isDraggingRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -146,7 +149,6 @@ export default function AppleGame() {
 
     setDragRect({ left, top, width, height });
   };
-
   const handleMouseUp = (e) => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
@@ -161,7 +163,7 @@ export default function AppleGame() {
     selectCellsInRect(dragStartRef.current, endCoord);
   };
 
-  // --- 모바일 터치 이벤트 ---
+  // 터치 이벤트 직접 addEventListener 방식으로 등록해서 모바일 드래그 지원
   useEffect(() => {
     const gameArea = gameAreaRef.current;
     if (!gameArea) return;
@@ -184,7 +186,6 @@ export default function AppleGame() {
       });
       setSelectedCells([]);
     };
-
     const handleTouchMove = (e) => {
       e.preventDefault();
       if (!isDraggingRef.current) return;
@@ -200,7 +201,6 @@ export default function AppleGame() {
 
       setDragRect({ left, top, width, height });
     };
-
     const handleTouchEnd = (e) => {
       e.preventDefault();
       if (!isDraggingRef.current) return;
@@ -229,8 +229,6 @@ export default function AppleGame() {
       gameArea.removeEventListener("touchend", handleTouchEnd);
     };
   }, [isGameOver]);
-
-  // --- UI 렌더링 ---
 
   if (!gameStarted) {
     return (
@@ -283,7 +281,7 @@ export default function AppleGame() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         style={{
-          touchAction: "none", // 모바일 드래그 가능하게 하는 핵심
+          touchAction: "none", // 이거 안하면 모바일 드래그 안됨
           width: GRID_SIZE * CELL_SIZE,
           height: GRID_SIZE * CELL_SIZE,
           border: "3px solid #333",
