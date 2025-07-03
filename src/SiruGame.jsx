@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import siruImg from "./assets/siru.png";
 
 const GRID_SIZE = 4;
 const CELL_SIZE = window.innerWidth < 500 ? 60 : 100;
@@ -56,7 +57,7 @@ export default function SiruGame() {
   }, [timeLeft, gameStarted]);
 
   const handleDragStart = (x, y) => {
-    if (isGameOver) return; // 게임 끝나면 무시
+    if (isGameOver) return;
     isDraggingRef.current = true;
     dragStartRef.current = { x, y };
     setDragRect({ left: x, top: y, width: 0, height: 0 });
@@ -64,7 +65,7 @@ export default function SiruGame() {
   };
 
   const handleDragMove = (x, y) => {
-    if (!isDraggingRef.current || isGameOver) return; // 게임 끝나면 무시
+    if (!isDraggingRef.current || isGameOver) return;
     const left = Math.min(dragStartRef.current.x, x);
     const top = Math.min(dragStartRef.current.y, y);
     const width = Math.abs(dragStartRef.current.x - x);
@@ -73,7 +74,7 @@ export default function SiruGame() {
   };
 
   const handleDragEnd = (x, y) => {
-    if (!isDraggingRef.current || isGameOver) return; // 게임 끝나면 무시
+    if (!isDraggingRef.current || isGameOver) return;
     isDraggingRef.current = false;
     setDragRect(null);
     selectCellsInRect(dragStartRef.current, { x, y });
@@ -85,7 +86,7 @@ export default function SiruGame() {
   });
 
   const selectCellsInRect = (start, end) => {
-    if (isGameOver) return; // 게임 끝나면 무시
+    if (isGameOver) return;
     if (!start || !end) return;
     const startIdx = coordToIndex(start);
     const endIdx = coordToIndex(end);
@@ -154,19 +155,19 @@ export default function SiruGame() {
 
     const handleTouchStart = (e) => {
       e.preventDefault();
-      if (isGameOver) return; // 게임 끝나면 무시
+      if (isGameOver) return;
       const { x, y } = getCoord(e);
       handleDragStart(x, y);
     };
     const handleTouchMove = (e) => {
       e.preventDefault();
-      if (isGameOver) return; // 게임 끝나면 무시
+      if (isGameOver) return;
       const { x, y } = getCoord(e);
       handleDragMove(x, y);
     };
     const handleTouchEnd = (e) => {
       e.preventDefault();
-      if (isGameOver) return; // 게임 끝나면 무시
+      if (isGameOver) return;
       const rect = gameArea.getBoundingClientRect();
       const touch = e.changedTouches ? e.changedTouches[0] : e;
       handleDragEnd(touch.clientX - rect.left, touch.clientY - rect.top);
@@ -188,7 +189,32 @@ export default function SiruGame() {
   if (!gameStarted) {
     return (
       <div style={{ textAlign: "center" }}>
-        <h2>🍎 사과 합 10 게임 🍎</h2>
+        <h2>
+          {" "}
+          <img
+            src={siruImg}
+            alt="siru"
+            style={{
+              width: CELL_SIZE / 1.5,
+              height: CELL_SIZE / 1.5,
+              pointerEvents: "none",
+              position: "relative",
+              top: "30px",
+            }}
+          />{" "}
+          시루 합 10 게임{" "}
+          <img
+            src={siruImg}
+            alt="siru"
+            style={{
+              width: CELL_SIZE / 1.5,
+              height: CELL_SIZE / 1.5,
+              pointerEvents: "none",
+              position: "relative",
+              top: "30px",
+            }}
+          />
+        </h2>
         <h4 style={{ textAlign: "right", marginTop: ".5px" }}>
           만든이 : 고순이
         </h4>
@@ -198,7 +224,7 @@ export default function SiruGame() {
             fontSize: "24px",
             padding: "12px 24px",
             cursor: "pointer",
-            backgroundColor: "#F44336",
+            backgroundColor: "black",
             color: "#fff",
             border: "none",
             borderRadius: "8px",
@@ -218,7 +244,32 @@ export default function SiruGame() {
         textAlign: "center",
       }}
     >
-      <h2>🍎 사과 합 10 게임 🍎</h2>
+      <h2>
+        {" "}
+        <img
+          src={siruImg}
+          alt="siru"
+          style={{
+            width: CELL_SIZE / 1.5,
+            height: CELL_SIZE / 1.5,
+            pointerEvents: "none",
+            position: "relative",
+            top: "30px",
+          }}
+        />{" "}
+        시루 합 10 게임{" "}
+        <img
+          src={siruImg}
+          alt="siru"
+          style={{
+            width: CELL_SIZE / 1.5,
+            height: CELL_SIZE / 1.5,
+            pointerEvents: "none",
+            position: "relative",
+            top: "30px",
+          }}
+        />
+      </h2>
       <div style={{ fontSize: "18px", marginBottom: "10px" }}>
         <strong>점수:</strong> {score} &nbsp;|&nbsp; <strong>콤보:</strong>{" "}
         {combo} &nbsp;|&nbsp; <strong>남은 시간:</strong> {timeLeft}s
@@ -287,7 +338,18 @@ export default function SiruGame() {
                   userSelect: "none",
                 }}
               >
-                🍎{num}
+                <img
+                  src={siruImg}
+                  alt="siru"
+                  style={{
+                    width: CELL_SIZE / 1.5,
+                    height: CELL_SIZE / 1.5,
+                    pointerEvents: "none",
+                    position: "relative",
+                    top: "20px",
+                  }}
+                />
+                {num}
               </div>
             );
           })
@@ -315,7 +377,7 @@ export default function SiruGame() {
           padding: "10px 20px",
           cursor: "pointer",
           marginTop: "20px",
-          backgroundColor: "#F44336",
+          backgroundColor: "black",
           color: "#fff",
           border: "none",
           borderRadius: "8px",
